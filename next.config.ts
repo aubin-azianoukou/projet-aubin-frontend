@@ -19,7 +19,23 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'your-production-domain.com',
+        hostname: 'projet-aubin-backend-production.up.railway.app',
+        pathname: '/uploads/**',
+      },
+      // ⭐ Domaines futurs (aubinromain.com) - au cas où
+      {
+        protocol: 'https',
+        hostname: '**.up.railway.app',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'aubinromain.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.aubinromain.com',
         pathname: '/uploads/**',
       },
     ],
