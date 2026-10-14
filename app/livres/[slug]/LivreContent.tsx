@@ -4,7 +4,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import BookPrice from '@/components/BookPrice';
-import { livreConfig, packIntegral, boutiqueChariow } from '@/lib/livre-config';
+import {
+  livreConfig,
+  packIntegral,
+  boutiqueChariow,
+  whatsappAubin,
+  librairieJeunesse,
+  mercuryLibrairie,
+} from '@/lib/livre-config';
 
 interface LivreContentProps {
   livre: any;
@@ -71,19 +78,12 @@ export default function LivreContent({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerFormat, setDrawerFormat] = useState<'papier' | 'numerique'>('papier');
 
-  // ============================================================
-  // CONFIGURATION DU LIVRE (depuis livre-config.ts)
-  // ============================================================
   const config = livreConfig[slug] || {
     lienChariow: '',
-    lienAmazonPapier: '',
-    lienLibrairieJeunesse: '',
-    lienMercury: '',
     prixBarrePDF: '',
     badgePromo: '',
   };
 
-  // Construction de l'URL de la couverture
   const coverUrl = livre.Maquette_Couverture?.url
     ? `${process.env.NEXT_PUBLIC_STRAPI_API_URL}${livre.Maquette_Couverture.url}`
     : localCoverImages[slug] || null;
@@ -91,14 +91,12 @@ export default function LivreContent({
   const thumbnails = localThumbnailImages[slug] || [];
   const titre = livre.Titre || livre.titre || 'Titre non disponible';
 
-  // Déterminer quelle image afficher
   const displayImage = showThumbnail && thumbnails.length > 0
     ? thumbnails[selectedThumbIndex]
     : coverUrl;
 
   const isThumbnailMode = showThumbnail && thumbnails.length > 0;
 
-  // Navigation des miniatures
   const nextThumb = () => {
     if (thumbnails.length === 0) return;
     setShowThumbnail(true);
@@ -120,20 +118,17 @@ export default function LivreContent({
     setShowThumbnail(false);
   };
 
-  // Ouvrir le drawer
   const openDrawer = (format: 'papier' | 'numerique') => {
     setDrawerFormat(format);
     setIsDrawerOpen(true);
     document.body.style.overflow = 'hidden';
   };
 
-  // Fermer le drawer
   const closeDrawer = () => {
     setIsDrawerOpen(false);
     document.body.style.overflow = '';
   };
 
-  // Extrait gratuit
   let extraitUrl: string | null = null;
   if (livre.Extrait_Gratuit) {
     if (Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit.length > 0) {
@@ -145,9 +140,13 @@ export default function LivreContent({
     }
   }
 
+  // Message WhatsApp pré-rempli pour commander le papier
+  const messageWhatsAppPapier = encodeURIComponent(
+    `Bonjour Aubin, je souhaite commander le livre "${titre}" en version papier (${livre.Prix_Papier} FCFA).`
+  );
+
   return (
     <main className="book-detail-page">
-      {/* Fil d'Ariane */}
       <nav className="breadcrumb">
         <div className="container">
           <Link href="/" className="breadcrumb-link">Accueil</Link>
@@ -158,11 +157,9 @@ export default function LivreContent({
         </div>
       </nav>
 
-      {/* SECTION PRINCIPALE */}
       <section className="book-hero">
         <div className="container">
           <div className="book-hero-grid">
-            {/* COUVERTURE + MINIATURES */}
             <div className="book-cover-section">
               {thumbnails.length > 0 && (
                 <div className="thumbnails-wrapper">
@@ -223,14 +220,12 @@ export default function LivreContent({
               </div>
             </div>
 
-            {/* INFOS + BOUTONS */}
             <div className="book-info-wrapper">
               <h1 className="book-title">{titre}</h1>
               {livre.sous_titre && <h2 className="book-subtitle">{livre.sous_titre}</h2>}
               {livre.Auteur && <p className="book-author">Par <span>{livre.Auteur}</span></p>}
               {livre.Description && <p className="book-description">{livre.Description}</p>}
 
-              {/* PRIX AVEC BADGE */}
               <div className="book-prices">
                 {livre.Prix_Papier && (
                   <div className="price-item">
@@ -253,7 +248,6 @@ export default function LivreContent({
 
               <p className="buy-section-title">Commander selon votre format</p>
 
-              {/* BOUTONS AVEC OUVERTURE DE DRAWER */}
               <div className="book-buttons-group">
                 <button
                   className="btn-buy btn-papier"
@@ -283,14 +277,11 @@ export default function LivreContent({
         </div>
       </section>
 
-      {/* ============================================================ */}
-      {/* DRAWER LATÉRAL AVEC LOGOS */}
-      {/* ============================================================ */}
+      {/* DRAWER */}
       <div className={`drawer-overlay ${isDrawerOpen ? 'open' : ''}`} onClick={closeDrawer}></div>
 
       <div className={`buy-drawer ${isDrawerOpen ? 'open' : ''}`}>
         <div className="drawer-content">
-          {/* En-tête */}
           <div className="drawer-header">
             <h2 className="drawer-title">
               {drawerFormat === 'papier' ? '📖 Livre papier' : '📄 Livre numérique'}
@@ -298,7 +289,6 @@ export default function LivreContent({
             <button className="drawer-close" onClick={closeDrawer}>✕</button>
           </div>
 
-          {/* Sélecteur de format (Papier / Numérique) */}
           <div className="format-selector">
             <button
               className={`format-tab ${drawerFormat === 'papier' ? 'active' : ''}`}
@@ -314,9 +304,7 @@ export default function LivreContent({
             </button>
           </div>
 
-          {/* ============================================================ */}
           {/* CONTENU PAPIER */}
-          {/* ============================================================ */}
           {drawerFormat === 'papier' && (
             <div className="format-panel">
               <p className="price-display">
@@ -326,8 +314,13 @@ export default function LivreContent({
               <div className="buy-section">
                 <h3>Commander en ligne</h3>
                 <div className="retailer-grid retailer-grid-3">
-                  {/* Aubin Romain (Papier) */}
-                  <a href={livre.Lien_Achat_Papier || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  {/* Aubin Romain — WhatsApp direct */}
+                  <a
+                    href={`${whatsappAubin}?text=${messageWhatsAppPapier}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="retailer-card"
+                  >
                     <div className="retailer-logo retailer-site">
                       <Image
                         src="/images/logos/aubinromain-logo.png"
@@ -341,7 +334,7 @@ export default function LivreContent({
                   </a>
 
                   {/* Amazon KDP (Papier) */}
-                  <a href={config.lienAmazonPapier || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  <a href={config.lienChariow ? '#' : '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-amazon">
                       <Image
                         src="/images/logos/amazon-logo.png"
@@ -354,8 +347,8 @@ export default function LivreContent({
                     <span className="retailer-name">Amazon</span>
                   </a>
 
-                  {/* Librairie Jeunesse d'Afrique (Papier uniquement) */}
-                  <a href={config.lienLibrairieJeunesse || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  {/* Librairie Jeunesse d'Afrique */}
+                  <a href={librairieJeunesse.lien} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-librairie">
                       <Image
                         src="/images/logos/Librairie jeunesse d'afrique-logo.png"
@@ -368,8 +361,8 @@ export default function LivreContent({
                     <span className="retailer-name">Librairie Jeunesse</span>
                   </a>
 
-                  {/* Mercury Librairie (Papier uniquement) */}
-                  <a href={config.lienMercury || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  {/* Mercury Librairie */}
+                  <a href={mercuryLibrairie.lien} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-mercury">
                       <Image
                         src="/images/logos/mercury-logo.png"
@@ -384,19 +377,26 @@ export default function LivreContent({
                 </div>
               </div>
 
+              {/* Infos librairies locales */}
               <div className="buy-section">
-                <h3>Trouver une librairie</h3>
-                <div className="search-store">
-                  <input type="text" placeholder="Ville ou code postal" />
-                  <button className="search-btn">🔍</button>
+                <h3>Où trouver le livre ?</h3>
+                <div className="librairies-info">
+                  <div className="librairie-info-card">
+                    <h4>📚 Librairie Jeunesse d'Afrique</h4>
+                    <p>📍 {librairieJeunesse.adresse}</p>
+                    <p>📞 {librairieJeunesse.telephone}</p>
+                    <p>📧 {librairieJeunesse.email}</p>
+                  </div>
+                  <div className="librairie-info-card">
+                    <h4>📚 Mercury Librairie</h4>
+                    <p>📍 {mercuryLibrairie.adresse}</p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ============================================================ */}
           {/* CONTENU NUMÉRIQUE */}
-          {/* ============================================================ */}
           {drawerFormat === 'numerique' && (
             <div className="format-panel">
               <p className="price-display">
@@ -408,8 +408,8 @@ export default function LivreContent({
 
               <div className="buy-section">
                 <h3>Commander le PDF sécurisé</h3>
-                <div className="retailer-grid retailer-grid-3">
-                  {/* Chariow (Numérique uniquement) */}
+                <div className="retailer-grid retailer-grid-2">
+                  {/* Chariow */}
                   <a href={config.lienChariow || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-chariow">
                       <Image
@@ -421,6 +421,21 @@ export default function LivreContent({
                       />
                     </div>
                     <span className="retailer-name">Chariow</span>
+                  </a>
+
+                  {/* WhatsApp direct */}
+                  <a
+                    href={`${whatsappAubin}?text=${encodeURIComponent(
+                      `Bonjour Aubin, je souhaite commander le PDF du livre "${titre}" (${livre.Prix_PDF} FCFA).`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="retailer-card"
+                  >
+                    <div className="retailer-logo" style={{ background: '#25D366' }}>
+                      <span style={{ color: 'white', fontSize: '20px' }}>💬</span>
+                    </div>
+                    <span className="retailer-name">WhatsApp</span>
                   </a>
                 </div>
               </div>
@@ -464,9 +479,7 @@ export default function LivreContent({
         </div>
       </div>
 
-      {/* ============================================================ */}
       {/* SUITE DU CONTENU */}
-      {/* ============================================================ */}
       <div className="book-content container">
         {livre.hero_titre && (
           <div className="content-block hero-block">
@@ -1047,6 +1060,10 @@ export default function LivreContent({
           grid-template-columns: repeat(3, 1fr);
         }
 
+        .retailer-grid-2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
         .retailer-card {
           display: flex;
           flex-direction: column;
@@ -1108,6 +1125,31 @@ export default function LivreContent({
           text-align: center;
           color: var(--color-gray);
           line-height: 1.1;
+        }
+
+        /* INFO LIBRAIRIES */
+        .librairies-info {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .librairie-info-card {
+          background: var(--color-white);
+          padding: 14px 16px;
+          border-radius: 10px;
+          border: 1px solid rgba(6, 23, 47, 0.08);
+        }
+        .librairie-info-card h4 {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--color-navy);
+          margin: 0 0 8px 0;
+        }
+        .librairie-info-card p {
+          font-size: 12px;
+          color: var(--color-gray);
+          margin: 2px 0;
+          line-height: 1.4;
         }
 
         .pack-card {
@@ -1174,41 +1216,6 @@ export default function LivreContent({
         .btn-voir-boutique:hover {
           background: var(--color-navy);
           color: white;
-        }
-
-        .search-store {
-          display: flex;
-          gap: 8px;
-        }
-
-        .search-store input {
-          flex: 1;
-          padding: 10px 14px;
-          border: 1px solid rgba(6, 23, 47, 0.1);
-          border-radius: 8px;
-          font-size: 14px;
-          background: var(--color-white);
-          font-family: inherit;
-        }
-
-        .search-store input:focus {
-          outline: none;
-          border-color: var(--color-gold);
-        }
-
-        .search-btn {
-          padding: 10px 16px;
-          background: var(--color-navy);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 16px;
-          transition: background 0.3s ease;
-        }
-
-        .search-btn:hover {
-          background: #0a1f3a;
         }
 
         .secure-note {
@@ -1289,20 +1296,13 @@ export default function LivreContent({
           .book-title { font-size: 26px; }
           .book-subtitle { font-size: 16px; }
 
-          .book-buttons-group {
-            max-width: 100%;
-          }
-
-          .btn-buy {
-            font-size: 13px;
-            padding: 10px 16px;
-            white-space: normal;
-            min-width: unset;
-          }
+          .book-buttons-group { max-width: 100%; }
+          .btn-buy { font-size: 13px; padding: 10px 16px; white-space: normal; min-width: unset; }
 
           .buy-drawer { width: 100%; max-width: 100vw; }
           .drawer-content { padding: 20px; }
           .retailer-grid-3 { grid-template-columns: repeat(2, 1fr); }
+          .retailer-grid-2 { grid-template-columns: repeat(2, 1fr); }
           .retailer-logo { width: 38px; height: 38px; padding: 4px; }
           .book-content { padding: 20px 0 40px 0; }
           .content-block { padding: 16px 18px; margin-bottom: 24px; }
@@ -1319,12 +1319,7 @@ export default function LivreContent({
           .book-cover-container { max-width: 260px; }
           .book-cover-container.thumbnail-mode { max-width: 200px; }
 
-          .btn-buy {
-            font-size: 12px;
-            padding: 10px 14px;
-            white-space: normal;
-            min-width: unset;
-          }
+          .btn-buy { font-size: 12px; padding: 10px 14px; white-space: normal; min-width: unset; }
 
           .buy-section-title { font-size: 12px; }
           .buy-drawer { width: 100%; }
@@ -1332,6 +1327,7 @@ export default function LivreContent({
           .drawer-title { font-size: 17px; }
           .price-display { font-size: 22px; }
           .retailer-grid-3 { grid-template-columns: repeat(2, 1fr); }
+          .retailer-grid-2 { grid-template-columns: 1fr; }
           .retailer-card { padding: 8px 4px; }
           .retailer-logo { width: 34px; height: 34px; padding: 3px; }
           .retailer-name { font-size: 9px; }
