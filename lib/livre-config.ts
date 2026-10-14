@@ -13,7 +13,7 @@ export interface LivreConfig {
   lienMercury: string;           // URL Mercury Librairie - vide pour l'instant
 
   // Promo PDF
-  prixPromoPDF: string;          // Prix barré du PDF
+  prixBarrePDF: string;          // Prix BARRÉ du PDF (= Prix PDF × 2)
   badgePromo: string;            // Badge affiché (ex: "50% OFF")
 }
 
@@ -23,7 +23,7 @@ export const livreConfig: Record<string, LivreConfig> = {
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '6 900',
+    prixBarrePDF: '13 800',
     badgePromo: '50% OFF',
   },
 
@@ -32,7 +32,7 @@ export const livreConfig: Record<string, LivreConfig> = {
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '3 900',
+    prixBarrePDF: '7 800',
     badgePromo: '50% OFF',
   },
 
@@ -41,7 +41,7 @@ export const livreConfig: Record<string, LivreConfig> = {
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '4 900',
+    prixBarrePDF: '9 800',
     badgePromo: '50% OFF',
   },
 
@@ -50,7 +50,7 @@ export const livreConfig: Record<string, LivreConfig> = {
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '4 900',
+    prixBarrePDF: '9 800',
     badgePromo: '50% OFF',
   },
 
@@ -59,7 +59,7 @@ export const livreConfig: Record<string, LivreConfig> = {
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '4 900',
+    prixBarrePDF: '9 800',
     badgePromo: '50% OFF',
   },
 };

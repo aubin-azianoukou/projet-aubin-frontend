@@ -79,7 +79,7 @@ export default function LivreContent({
     lienAmazonPapier: '',
     lienLibrairieJeunesse: '',
     lienMercury: '',
-    prixPromoPDF: '',
+    prixBarrePDF: '',
     badgePromo: '',
   };
 
@@ -242,8 +242,8 @@ export default function LivreContent({
                   <div className="price-item">
                     <span className="price-label">📄 PDF</span>
                     <BookPrice
-                      prix={livre.Prix_PDF}
-                      prixPromo={config.prixPromoPDF}
+                      prix={config.prixBarrePDF || livre.Prix_PDF}
+                      prixPromo={livre.Prix_PDF}
                       badge={config.badgePromo}
                       size="medium"
                     />
@@ -266,7 +266,7 @@ export default function LivreContent({
                   className="btn-buy btn-numerique"
                   onClick={() => openDrawer('numerique')}
                 >
-                  <span>📄</span> Numérique - {config.prixPromoPDF || livre.Prix_PDF} FCFA
+                  <span>📄</span> Numérique - {livre.Prix_PDF} FCFA
                   {config.badgePromo && (
                     <span className="btn-badge">{config.badgePromo}</span>
                   )}
@@ -400,7 +400,7 @@ export default function LivreContent({
           {drawerFormat === 'numerique' && (
             <div className="format-panel">
               <p className="price-display">
-                <strong>{config.prixPromoPDF || livre.Prix_PDF} FCFA</strong>
+                <strong>{livre.Prix_PDF} FCFA</strong>
                 {config.badgePromo && (
                   <span className="badge-promo-display">{config.badgePromo}</span>
                 )}
@@ -1110,7 +1110,6 @@ export default function LivreContent({
           line-height: 1.1;
         }
 
-        /* PACK INTÉGRAL */
         .pack-card {
           display: block;
           padding: 18px 20px;
