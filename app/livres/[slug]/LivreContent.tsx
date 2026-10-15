@@ -13,6 +13,9 @@ import {
   mercuryLibrairie,
 } from '@/lib/livre-config';
 
+// URL du script Google Apps Script
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyscbtJ9-7CxGQHp2yKNOIbDm2Hg0U7ofeXF2P9-BrW9kUD63hD3slJdYhtGzHKzNA/exec';
+
 interface LivreContentProps {
   livre: any;
   slug: string;
@@ -78,6 +81,15 @@ export default function LivreContent({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerFormat, setDrawerFormat] = useState<'papier' | 'numerique'>('papier');
 
+  // États pour le modal extrait
+  const [isExtraitModalOpen, setIsExtraitModalOpen] = useState(false);
+  const [extraitNom, setExtraitNom] = useState('');
+  const [extraitEmail, setExtraitEmail] = useState('');
+  const [extraitWhatsApp, setExtraitWhatsApp] = useState('');
+  const [extraitRgpd, setExtraitRgpd] = useState(false);
+  const [isSubmittingExtrait, setIsSubmittingExtrait] = useState(false);
+  const [isExtraitSuccess, setIsExtraitSuccess] = useState(false);
+
   const config = livreConfig[slug] || {
     lienChariow: '',
     prixBarrePDF: '',
@@ -127,6 +139,86 @@ export default function LivreContent({
   const closeDrawer = () => {
     setIsDrawerOpen(false);
     document.body.style.overflow = '';
+  };
+
+  // Ouvrir le modal extrait
+  const openExtraitModal = () => {
+    setIsExtraitModalOpen(true);
+    setIsExtraitSuccess(false);
+    setExtraitNom('');
+    setExtraitEmail('');
+    setExtraitWhatsApp('');
+    setExtraitRgpd(false);
+  };
+
+  // Fermer le modal extrait
+  const closeExtraitModal = () => {
+    setIsExtraitModalOpen(false);
+    setIsExtraitSuccess(false);
+  };
+
+  // Soumettre le formulaire extrait
+  const handleExtraitSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!extraitNom.trim() || !extraitEmail.trim() || !extraitWhatsApp.trim()) {
+      alert('Veuillez remplir tous les champs obligatoires (*)');
+      return;
+    }
+
+    if (!extraitRgpd) {
+      alert('Veuillez accepter d\'être recontacté pour recevoir votre extrait.');
+      return;
+    }
+
+    setIsSubmittingExtrait(true);
+
+    // Message WhatsApp
+    const messageWhatsApp = `Bonjour Aubin,
+
+Je viens de télécharger l'extrait gratuit du livre "${titre}" :
+
+👤 *Nom :* ${extraitNom}
+📧 *Email :* ${extraitEmail}
+📱 *WhatsApp :* ${extraitWhatsApp}
+
+Je souhaite en savoir plus sur ce livre.
+
+Merci !`;
+
+    const whatsappUrl = `${whatsappAubin}?text=${encodeURIComponent(messageWhatsApp)}`;
+
+    // Envoi vers Google Sheets
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'extrait',
+          nom: extraitNom,
+          email: extraitEmail,
+          telephone: extraitWhatsApp,
+          livre: titre,
+          slug: slug,
+          rgpd: extraitRgpd ? 'Oui' : 'Non',
+        }),
+      });
+    } catch (error) {
+      console.error('Erreur Google Sheets:', error);
+    }
+
+    // Ouvrir WhatsApp dans un nouvel onglet
+    window.open(whatsappUrl, '_blank');
+
+    // Marquer comme succès
+    setIsSubmittingExtrait(false);
+    setIsExtraitSuccess(true);
+
+    // Fermer le modal après 3 secondes
+    setTimeout(() => {
+      closeExtraitModal();
+    }, 3000);
   };
 
   let extraitUrl: string | null = null;
@@ -267,9 +359,12 @@ export default function LivreContent({
                 </button>
 
                 {extraitUrl && (
-                  <a href={extraitUrl} target="_blank" rel="noopener noreferrer" className="btn-buy btn-extrait">
+                  <button
+                    onClick={openExtraitModal}
+                    className="btn-buy btn-extrait"
+                  >
                     <span>📖</span> Télécharger un extrait gratuit
-                  </a>
+                  </button>
                 )}
               </div>
             </div>
@@ -334,7 +429,7 @@ export default function LivreContent({
                   </a>
 
                   {/* Amazon KDP (Papier) */}
-                  <a href={config.lienChariow ? '#' : '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  <a href="#" target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-amazon">
                       <Image
                         src="/images/logos/amazon-logo.png"
@@ -478,6 +573,113 @@ export default function LivreContent({
           )}
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* MODAL EXTRAIT GRATUIT */}
+      {/* ============================================================ */}
+      {isExtraitModalOpen && (
+        <div className="extrait-modal-overlay" onClick={closeExtraitModal}>
+          <div className="extrait-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="extrait-modal-close" onClick={closeExtraitModal}>✕</button>
+
+            {!isExtraitSuccess ? (
+              <>
+                <div className="extrait-modal-header">
+                  <h2 className="extrait-modal-title">📖 Recevez votre extrait gratuit</h2>
+                  <p className="extrait-modal-subtitle">
+                    Téléchargez les premières pages de <strong>{titre}</strong>
+                  </p>
+                </div>
+
+                <form className="extrait-modal-form" onSubmit={handleExtraitSubmit}>
+                  <div className="extrait-form-group">
+                    <label htmlFor="extraitNom">Nom complet *</label>
+                    <input
+                      type="text"
+                      id="extraitNom"
+                      value={extraitNom}
+                      onChange={(e) => setExtraitNom(e.target.value)}
+                      placeholder="Votre nom et prénom"
+                      required
+                    />
+                  </div>
+
+                  <div className="extrait-form-group">
+                    <label htmlFor="extraitEmail">Email *</label>
+                    <input
+                      type="email"
+                      id="extraitEmail"
+                      value={extraitEmail}
+                      onChange={(e) => setExtraitEmail(e.target.value)}
+                      placeholder="votre@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="extrait-form-group">
+                    <label htmlFor="extraitWhatsApp">WhatsApp *</label>
+                    <input
+                      type="tel"
+                      id="extraitWhatsApp"
+                      value={extraitWhatsApp}
+                      onChange={(e) => setExtraitWhatsApp(e.target.value)}
+                      placeholder="+226 70 00 00 00"
+                      required
+                    />
+                  </div>
+
+                  <div className="extrait-form-rgpd">
+                    <input
+                      type="checkbox"
+                      id="extraitRgpd"
+                      checked={extraitRgpd}
+                      onChange={(e) => setExtraitRgpd(e.target.checked)}
+                      required
+                    />
+                    <label htmlFor="extraitRgpd">
+                      J'accepte de recevoir l'extrait et d'être recontacté par email ou WhatsApp.
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="extrait-submit-btn"
+                    disabled={isSubmittingExtrait}
+                  >
+                    {isSubmittingExtrait ? (
+                      <>⏳ Envoi en cours...</>
+                    ) : (
+                      <>📥 Recevoir mon extrait</>
+                    )}
+                  </button>
+
+                  <p className="extrait-form-footer">
+                    🔒 Vos données sont protégées et confidentielles
+                  </p>
+                </form>
+              </>
+            ) : (
+              <div className="extrait-success">
+                <div className="extrait-success-icon">✅</div>
+                <h3>Merci {extraitNom} !</h3>
+                <p>Votre extrait est prêt à être téléchargé.</p>
+                <a
+                  href={extraitUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="extrait-download-btn"
+                  onClick={closeExtraitModal}
+                >
+                  📥 Télécharger l'extrait
+                </a>
+                <p className="extrait-success-footer">
+                  Un message WhatsApp vous a été envoyé.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SUITE DU CONTENU */}
       <div className="book-content container">
@@ -1227,6 +1429,228 @@ export default function LivreContent({
           border-top: 1px solid rgba(6, 23, 47, 0.06);
         }
 
+        /* ============================================================ */
+        /* MODAL EXTRAIT */
+        /* ============================================================ */
+        .extrait-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(6, 23, 47, 0.75);
+          backdrop-filter: blur(6px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .extrait-modal {
+          background: var(--color-white);
+          border-radius: 16px;
+          padding: 32px 28px;
+          max-width: 480px;
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          position: relative;
+          box-shadow: 0 20px 60px rgba(6, 23, 47, 0.3);
+          animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+          from { transform: translateY(30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+
+        .extrait-modal-close {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: none;
+          border: none;
+          font-size: 24px;
+          color: var(--color-gray);
+          cursor: pointer;
+          transition: color 0.3s;
+          line-height: 1;
+          padding: 4px;
+        }
+
+        .extrait-modal-close:hover {
+          color: var(--color-navy);
+        }
+
+        .extrait-modal-header {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+
+        .extrait-modal-title {
+          font-family: var(--font-serif);
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--color-navy);
+          margin: 0 0 8px 0;
+        }
+
+        .extrait-modal-subtitle {
+          font-size: 14px;
+          color: var(--color-gray);
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        .extrait-modal-form {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .extrait-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .extrait-form-group label {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--color-navy);
+        }
+
+        .extrait-form-group input {
+          padding: 12px 14px;
+          border: 1px solid rgba(6, 23, 47, 0.15);
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: inherit;
+          background: var(--color-cream);
+          transition: border-color 0.3s, background 0.3s;
+        }
+
+        .extrait-form-group input:focus {
+          outline: none;
+          border-color: var(--color-gold);
+          background: var(--color-white);
+        }
+
+        .extrait-form-rgpd {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          margin-top: 4px;
+        }
+
+        .extrait-form-rgpd input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          flex-shrink: 0;
+          margin-top: 2px;
+          accent-color: var(--color-gold);
+          cursor: pointer;
+        }
+
+        .extrait-form-rgpd label {
+          font-size: 12px;
+          color: var(--color-gray);
+          line-height: 1.5;
+          cursor: pointer;
+        }
+
+        .extrait-submit-btn {
+          background: var(--color-gold);
+          color: var(--color-navy);
+          padding: 14px 20px;
+          border: none;
+          border-radius: 9999px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.3s, transform 0.3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 4px;
+          font-family: inherit;
+        }
+
+        .extrait-submit-btn:hover:not(:disabled) {
+          background: #e1bb43;
+          transform: translateY(-2px);
+        }
+
+        .extrait-submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .extrait-form-footer {
+          text-align: center;
+          font-size: 12px;
+          color: var(--color-gray);
+          margin: 0;
+        }
+
+        .extrait-success {
+          text-align: center;
+          padding: 20px 0;
+        }
+
+        .extrait-success-icon {
+          font-size: 56px;
+          margin-bottom: 12px;
+        }
+
+        .extrait-success h3 {
+          font-family: var(--font-serif);
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--color-navy);
+          margin: 0 0 8px 0;
+        }
+
+        .extrait-success p {
+          font-size: 14px;
+          color: var(--color-gray);
+          margin: 0 0 20px 0;
+        }
+
+        .extrait-download-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: var(--color-gold);
+          color: var(--color-navy);
+          padding: 14px 28px;
+          border-radius: 9999px;
+          font-weight: 700;
+          font-size: 15px;
+          text-decoration: none;
+          transition: background 0.3s, transform 0.3s;
+        }
+
+        .extrait-download-btn:hover {
+          background: #e1bb43;
+          transform: translateY(-2px);
+        }
+
+        .extrait-success-footer {
+          font-size: 12px;
+          color: var(--color-gray);
+          margin-top: 16px;
+        }
+
         .book-content { padding: 40px 0 60px 0; }
         .content-block { margin-bottom: 40px; padding: 24px 28px; background: var(--color-white); border-radius: 12px; box-shadow: 0 2px 12px rgba(6,23,47,0.06); border: 1px solid rgba(6,23,47,0.06); }
         .content-title { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--color-navy); margin: 0 0 12px 0; }
@@ -1311,6 +1735,9 @@ export default function LivreContent({
           .ressources-grid { grid-template-columns: 1fr; }
           .avis-grid { grid-template-columns: 1fr; }
           .infos-grid { grid-template-columns: 1fr 1fr; }
+
+          .extrait-modal { padding: 24px 20px; }
+          .extrait-modal-title { font-size: 18px; }
         }
 
         @media (max-width: 480px) {
@@ -1337,6 +1764,10 @@ export default function LivreContent({
           .thumbnails-container { max-width: 180px; }
           .thumbnail-item { width: 50px; height: 75px; }
           .thumbnail-hint { font-size: 9px; padding: 4px 10px; white-space: normal; }
+
+          .extrait-modal { padding: 20px 16px; }
+          .extrait-modal-title { font-size: 16px; }
+          .extrait-modal-subtitle { font-size: 13px; }
         }
       `}</style>
     </main>
