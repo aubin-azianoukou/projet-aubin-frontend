@@ -136,7 +136,6 @@ export default function LivreContent({
     document.body.style.overflow = '';
   };
 
-  // Calcul de l'URL de l'extrait (AVANT le modal)
   let extraitUrl: string | null = null;
   if (livre.Extrait_Gratuit) {
     if (Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit.length > 0) {
@@ -170,6 +169,20 @@ export default function LivreContent({
       return;
     }
 
+    // Validation WhatsApp (au moins 8 chiffres)
+    const whatsappClean = extraitWhatsApp.replace(/\D/g, '');
+    if (whatsappClean.length < 8) {
+      alert('Veuillez entrer un numéro WhatsApp valide (au moins 8 chiffres)');
+      return;
+    }
+
+    // Validation Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(extraitEmail)) {
+      alert('Veuillez entrer un email valide');
+      return;
+    }
+
     if (!extraitRgpd) {
       alert('Veuillez accepter d\'être recontacté pour recevoir votre extrait.');
       return;
@@ -191,7 +204,6 @@ Merci !`;
 
     const whatsappUrl = `${whatsappAubin}?text=${encodeURIComponent(messageWhatsApp)}`;
 
-    // Envoi vers Google Sheets
     try {
       await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
@@ -211,22 +223,23 @@ Merci !`;
       console.error('Erreur Google Sheets:', error);
     }
 
-    // ⭐ TÉLÉCHARGEMENT AUTOMATIQUE DU PDF
-    if (extraitUrl) {
-      const link = document.createElement('a');
-      link.href = extraitUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.download = `Extrait - ${titre}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Ouvrir WhatsApp dans un nouvel onglet
+    // 1. OUVRIR WHATSAPP EN PREMIER
     window.open(whatsappUrl, '_blank');
 
-    // Marquer comme succès (modal reste ouvert)
+    // 2. PUIS TÉLÉCHARGER LE PDF APRÈS 500ms
+    setTimeout(() => {
+      if (extraitUrl) {
+        const link = document.createElement('a');
+        link.href = extraitUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.download = `Extrait - ${titre}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }, 500);
+
     setIsSubmittingExtrait(false);
     setIsExtraitSuccess(true);
   };
