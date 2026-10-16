@@ -169,14 +169,12 @@ export default function LivreContent({
       return;
     }
 
-    // Validation WhatsApp (au moins 8 chiffres)
     const whatsappClean = extraitWhatsApp.replace(/\D/g, '');
     if (whatsappClean.length < 8) {
       alert('Veuillez entrer un numéro WhatsApp valide (au moins 8 chiffres)');
       return;
     }
 
-    // Validation Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(extraitEmail)) {
       alert('Veuillez entrer un email valide');
@@ -223,10 +221,8 @@ Merci !`;
       console.error('Erreur Google Sheets:', error);
     }
 
-    // 1. OUVRIR WHATSAPP EN PREMIER
     window.open(whatsappUrl, '_blank');
 
-    // 2. PUIS TÉLÉCHARGER LE PDF APRÈS 500ms
     setTimeout(() => {
       if (extraitUrl) {
         const link = document.createElement('a');
@@ -656,9 +652,11 @@ Merci !`;
               </>
             ) : (
               <div className="extrait-success">
-                <div className="extrait-success-icon">✅</div>
+                <div className="extrait-success-icon">🎉</div>
                 <h3>Merci {extraitNom} !</h3>
-                <p>Votre extrait est en cours de téléchargement.</p>
+                <p style={{ fontSize: '15px', color: '#06172f', fontWeight: 600 }}>
+                  Cliquez ci-dessous pour télécharger votre extrait
+                </p>
                 {extraitUrl && (
                   <a
                     href={extraitUrl}
@@ -666,8 +664,17 @@ Merci !`;
                     rel="noopener noreferrer"
                     className="extrait-download-btn"
                     download
+                    style={{
+                      background: '#d4af37',
+                      color: '#06172f',
+                      fontSize: '16px',
+                      padding: '16px 32px',
+                      marginBottom: '20px',
+                      boxShadow: '0 8px 24px rgba(212,175,55,0.4)',
+                      animation: 'pulse 2s infinite',
+                    }}
                   >
-                    📥 Télécharger à nouveau
+                    📥 Télécharger mon extrait gratuit
                   </a>
                 )}
                 <button
@@ -677,7 +684,7 @@ Merci !`;
                   Fermer
                 </button>
                 <p className="extrait-success-footer">
-                  Un message WhatsApp vous a été envoyé.
+                  Un message WhatsApp vous a été envoyé avec les détails.
                 </p>
               </div>
             )}
@@ -1664,6 +1671,11 @@ Merci !`;
         .extrait-close-btn:hover {
           background: var(--color-cream);
           color: var(--color-navy);
+        }
+
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
         }
 
         .extrait-success-footer {
