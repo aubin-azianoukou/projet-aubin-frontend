@@ -13,7 +13,6 @@ import {
   mercuryLibrairie,
 } from '@/lib/livre-config';
 
-// URL du script Google Apps Script
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyscbtJ9-7CxGQHp2yKNOIbDm2Hg0U7ofeXF2P9-BrW9kUD63hD3slJdYhtGzHKzNA/exec';
 
 interface LivreContentProps {
@@ -23,9 +22,6 @@ interface LivreContentProps {
   localThumbnailImages: Record<string, string[]>;
 }
 
-// ============================================================
-// FONCTIONS HELPERS
-// ============================================================
 function getCitationText(citation: any): string {
   if (typeof citation === 'string') return citation;
   if (citation?.Citation) return citation.Citation;
@@ -81,7 +77,6 @@ export default function LivreContent({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerFormat, setDrawerFormat] = useState<'papier' | 'numerique'>('papier');
 
-  // États pour le modal extrait
   const [isExtraitModalOpen, setIsExtraitModalOpen] = useState(false);
   const [extraitNom, setExtraitNom] = useState('');
   const [extraitEmail, setExtraitEmail] = useState('');
@@ -141,7 +136,18 @@ export default function LivreContent({
     document.body.style.overflow = '';
   };
 
-  // Ouvrir le modal extrait
+  // Calcul de l'URL de l'extrait (AVANT le modal)
+  let extraitUrl: string | null = null;
+  if (livre.Extrait_Gratuit) {
+    if (Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit.length > 0) {
+      extraitUrl = livre.Extrait_Gratuit[0]?.url
+        ? `${process.env.NEXT_PUBLIC_STRAPI_API_URL}${livre.Extrait_Gratuit[0].url}`
+        : null;
+    } else if (!Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit?.url) {
+      extraitUrl = `${process.env.NEXT_PUBLIC_STRAPI_API_URL}${livre.Extrait_Gratuit.url}`;
+    }
+  }
+
   const openExtraitModal = () => {
     setIsExtraitModalOpen(true);
     setIsExtraitSuccess(false);
@@ -151,13 +157,11 @@ export default function LivreContent({
     setExtraitRgpd(false);
   };
 
-  // Fermer le modal extrait
   const closeExtraitModal = () => {
     setIsExtraitModalOpen(false);
     setIsExtraitSuccess(false);
   };
 
-  // Soumettre le formulaire extrait
   const handleExtraitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -173,7 +177,6 @@ export default function LivreContent({
 
     setIsSubmittingExtrait(true);
 
-    // Message WhatsApp
     const messageWhatsApp = `Bonjour Aubin,
 
 Je viens de télécharger l'extrait gratuit du livre "${titre}" :
@@ -208,31 +211,26 @@ Merci !`;
       console.error('Erreur Google Sheets:', error);
     }
 
+    // ⭐ TÉLÉCHARGEMENT AUTOMATIQUE DU PDF
+    if (extraitUrl) {
+      const link = document.createElement('a');
+      link.href = extraitUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.download = `Extrait - ${titre}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     // Ouvrir WhatsApp dans un nouvel onglet
     window.open(whatsappUrl, '_blank');
 
-    // Marquer comme succès
+    // Marquer comme succès (modal reste ouvert)
     setIsSubmittingExtrait(false);
     setIsExtraitSuccess(true);
-
-    // Fermer le modal après 3 secondes
-    setTimeout(() => {
-      closeExtraitModal();
-    }, 3000);
   };
 
-  let extraitUrl: string | null = null;
-  if (livre.Extrait_Gratuit) {
-    if (Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit.length > 0) {
-      extraitUrl = livre.Extrait_Gratuit[0]?.url
-        ? `${process.env.NEXT_PUBLIC_STRAPI_API_URL}${livre.Extrait_Gratuit[0].url}`
-        : null;
-    } else if (!Array.isArray(livre.Extrait_Gratuit) && livre.Extrait_Gratuit?.url) {
-      extraitUrl = `${process.env.NEXT_PUBLIC_STRAPI_API_URL}${livre.Extrait_Gratuit.url}`;
-    }
-  }
-
-  // Message WhatsApp pré-rempli pour commander le papier
   const messageWhatsAppPapier = encodeURIComponent(
     `Bonjour Aubin, je souhaite commander le livre "${titre}" en version papier (${livre.Prix_Papier} FCFA).`
   );
@@ -372,7 +370,6 @@ Merci !`;
         </div>
       </section>
 
-      {/* DRAWER */}
       <div className={`drawer-overlay ${isDrawerOpen ? 'open' : ''}`} onClick={closeDrawer}></div>
 
       <div className={`buy-drawer ${isDrawerOpen ? 'open' : ''}`}>
@@ -399,7 +396,6 @@ Merci !`;
             </button>
           </div>
 
-          {/* CONTENU PAPIER */}
           {drawerFormat === 'papier' && (
             <div className="format-panel">
               <p className="price-display">
@@ -409,7 +405,6 @@ Merci !`;
               <div className="buy-section">
                 <h3>Commander en ligne</h3>
                 <div className="retailer-grid retailer-grid-3">
-                  {/* Aubin Romain — WhatsApp direct */}
                   <a
                     href={`${whatsappAubin}?text=${messageWhatsAppPapier}`}
                     target="_blank"
@@ -428,7 +423,6 @@ Merci !`;
                     <span className="retailer-name">Aubin Romain</span>
                   </a>
 
-                  {/* Amazon KDP (Papier) */}
                   <a href="#" target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-amazon">
                       <Image
@@ -442,7 +436,6 @@ Merci !`;
                     <span className="retailer-name">Amazon</span>
                   </a>
 
-                  {/* Librairie Jeunesse d'Afrique */}
                   <a href={librairieJeunesse.lien} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-librairie">
                       <Image
@@ -456,7 +449,6 @@ Merci !`;
                     <span className="retailer-name">Librairie Jeunesse</span>
                   </a>
 
-                  {/* Mercury Librairie */}
                   <a href={mercuryLibrairie.lien} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-mercury">
                       <Image
@@ -472,7 +464,6 @@ Merci !`;
                 </div>
               </div>
 
-              {/* Infos librairies locales */}
               <div className="buy-section">
                 <h3>Où trouver le livre ?</h3>
                 <div className="librairies-info">
@@ -491,7 +482,6 @@ Merci !`;
             </div>
           )}
 
-          {/* CONTENU NUMÉRIQUE */}
           {drawerFormat === 'numerique' && (
             <div className="format-panel">
               <p className="price-display">
@@ -504,7 +494,6 @@ Merci !`;
               <div className="buy-section">
                 <h3>Commander le PDF sécurisé</h3>
                 <div className="retailer-grid retailer-grid-2">
-                  {/* Chariow */}
                   <a href={config.lienChariow || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
                     <div className="retailer-logo retailer-chariow">
                       <Image
@@ -518,7 +507,6 @@ Merci !`;
                     <span className="retailer-name">Chariow</span>
                   </a>
 
-                  {/* WhatsApp direct */}
                   <a
                     href={`${whatsappAubin}?text=${encodeURIComponent(
                       `Bonjour Aubin, je souhaite commander le PDF du livre "${titre}" (${livre.Prix_PDF} FCFA).`
@@ -535,7 +523,6 @@ Merci !`;
                 </div>
               </div>
 
-              {/* PACK INTÉGRAL */}
               <div className="buy-section">
                 <h3>🎁 Économisez encore plus</h3>
                 <a
@@ -553,7 +540,6 @@ Merci !`;
                 </a>
               </div>
 
-              {/* VOIR TOUS LES LIVRES */}
               <div className="buy-section">
                 <a
                   href={boutiqueChariow}
@@ -574,9 +560,6 @@ Merci !`;
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* MODAL EXTRAIT GRATUIT */}
-      {/* ============================================================ */}
       {isExtraitModalOpen && (
         <div className="extrait-modal-overlay" onClick={closeExtraitModal}>
           <div className="extrait-modal" onClick={(e) => e.stopPropagation()}>
@@ -662,16 +645,24 @@ Merci !`;
               <div className="extrait-success">
                 <div className="extrait-success-icon">✅</div>
                 <h3>Merci {extraitNom} !</h3>
-                <p>Votre extrait est prêt à être téléchargé.</p>
-                <a
-                  href={extraitUrl || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="extrait-download-btn"
+                <p>Votre extrait est en cours de téléchargement.</p>
+                {extraitUrl && (
+                  <a
+                    href={extraitUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="extrait-download-btn"
+                    download
+                  >
+                    📥 Télécharger à nouveau
+                  </a>
+                )}
+                <button
+                  className="extrait-close-btn"
                   onClick={closeExtraitModal}
                 >
-                  📥 Télécharger l'extrait
-                </a>
+                  Fermer
+                </button>
                 <p className="extrait-success-footer">
                   Un message WhatsApp vous a été envoyé.
                 </p>
@@ -681,7 +672,6 @@ Merci !`;
         </div>
       )}
 
-      {/* SUITE DU CONTENU */}
       <div className="book-content container">
         {livre.hero_titre && (
           <div className="content-block hero-block">
@@ -1329,7 +1319,6 @@ Merci !`;
           line-height: 1.1;
         }
 
-        /* INFO LIBRAIRIES */
         .librairies-info {
           display: flex;
           flex-direction: column;
@@ -1429,9 +1418,6 @@ Merci !`;
           border-top: 1px solid rgba(6, 23, 47, 0.06);
         }
 
-        /* ============================================================ */
-        /* MODAL EXTRAIT */
-        /* ============================================================ */
         .extrait-modal-overlay {
           position: fixed;
           top: 0;
@@ -1638,11 +1624,33 @@ Merci !`;
           font-size: 15px;
           text-decoration: none;
           transition: background 0.3s, transform 0.3s;
+          margin-bottom: 12px;
         }
 
         .extrait-download-btn:hover {
           background: #e1bb43;
           transform: translateY(-2px);
+        }
+
+        .extrait-close-btn {
+          display: block;
+          width: 100%;
+          padding: 12px 20px;
+          background: transparent;
+          color: var(--color-gray);
+          border: 1px solid rgba(6, 23, 47, 0.15);
+          border-radius: 9999px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.3s;
+          margin-top: 8px;
+        }
+
+        .extrait-close-btn:hover {
+          background: var(--color-cream);
+          color: var(--color-navy);
         }
 
         .extrait-success-footer {
