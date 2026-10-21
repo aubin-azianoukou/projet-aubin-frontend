@@ -15,6 +15,13 @@ import {
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyscbtJ9-7CxGQHp2yKNOIbDm2Hg0U7ofeXF2P9-BrW9kUD63hD3slJdYhtGzHKzNA/exec';
 
+// Type pour éviter les erreurs TypeScript avec fbq
+declare global {
+  interface Window {
+    fbq: any;
+  }
+}
+
 interface LivreContentProps {
   livre: any;
   slug: string;
@@ -161,6 +168,19 @@ export default function LivreContent({
     setIsExtraitSuccess(false);
   };
 
+  // Fonction pour tracker les clics Chariow
+  const trackChariowClick = () => {
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      const prix = Number(String(livre.Prix_PDF || '0').replace(/\s/g, ''));
+      (window as any).fbq('track', 'InitiateCheckout', {
+        content_name: titre,
+        content_category: 'Livre PDF',
+        value: prix,
+        currency: 'XOF'
+      });
+    }
+  };
+
   const handleExtraitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -219,6 +239,16 @@ Merci !`;
       });
     } catch (error) {
       console.error('Erreur Google Sheets:', error);
+    }
+
+    // ⭐ TRACKING META PIXEL - Événement Lead
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'Lead', {
+        content_name: titre,
+        content_category: 'Livre PDF',
+        value: 0,
+        currency: 'XOF'
+      });
     }
 
     window.open(whatsappUrl, '_blank');
@@ -503,7 +533,13 @@ Merci !`;
               <div className="buy-section">
                 <h3>Commander le PDF sécurisé</h3>
                 <div className="retailer-grid retailer-grid-2">
-                  <a href={config.lienChariow || '#'} target="_blank" rel="noopener noreferrer" className="retailer-card">
+                  <a 
+                    href={config.lienChariow || '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="retailer-card"
+                    onClick={trackChariowClick}
+                  >
                     <div className="retailer-logo retailer-chariow">
                       <Image
                         src="/images/logos/chariow-logo.png"
@@ -539,6 +575,7 @@ Merci !`;
                   target="_blank"
                   rel="noopener noreferrer"
                   className="pack-card"
+                  onClick={trackChariowClick}
                 >
                   <div className="pack-badge">{packIntegral.badge}</div>
                   <div className="pack-title">Pack Intégral — Les 5 livres</div>
@@ -555,6 +592,7 @@ Merci !`;
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-voir-boutique"
+                  onClick={trackChariowClick}
                 >
                   🛒 Voir tous mes livres
                 </a>
